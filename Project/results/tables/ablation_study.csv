@@ -1,0 +1,5 @@
+Feature_Category,Num_Features,Accuracy,Sensitivity,Specificity,AUC
+Time-Domain HRV,5,0.6877,0.6480,0.7891,0.8014
+Frequency-Domain HRV,3,0.6935,0.7253,0.6122,0.7348
+Wavelet Features,4,0.6054,0.7013,0.3605,0.5508
+Hybrid (All Features),14,0.6877,0.6880,0.6871,0.8102

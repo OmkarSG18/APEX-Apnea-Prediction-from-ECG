@@ -1,0 +1,7 @@
+MATLAB Version: 26.1.0.3346908 (R2026a) Update 5
+
+Checking Required Toolboxes:
+  [MISSING] Signal Processing Toolbox
+  [MISSING] Wavelet Toolbox
+  [OK]   Statistics and Machine Learning Toolbox
+  [WARN] WFDB Toolbox for MATLAB not detected on path.

@@ -1,0 +1,15 @@
+Feature,Importance_Score
+mRR,0.808805
+SDNN,0.860288
+RMSSD,0.889994
+pNN50,1.060273
+HR_mean,0.927347
+LF_power,0.925847
+HF_power,0.940214
+LF_HF_ratio,0.669747
+Wavelet_Entropy,2.407140
+Energy_A5,1.998192
+Ratio_D3_D4,2.177129
+Var_D4,3.477145
+EDR_Amplitude,1.370358
+EDR_Rate,0.809771

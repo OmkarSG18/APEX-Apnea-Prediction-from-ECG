@@ -1,0 +1,15 @@
+Rank,Feature,ReliefF_Weight
+1,Var_D4,0.005457
+2,Energy_A5,0.002278
+3,pNN50,0.001080
+4,Wavelet_Entropy,0.000800
+5,HF_power,0.000787
+6,EDR_Rate,0.000732
+7,HR_mean,0.000709
+8,RMSSD,0.000436
+9,SDNN,0.000354
+10,EDR_Amplitude,0.000215
+11,LF_HF_ratio,0.000131
+12,mRR,0.000043
+13,LF_power,0.000033
+14,Ratio_D3_D4,-0.000468

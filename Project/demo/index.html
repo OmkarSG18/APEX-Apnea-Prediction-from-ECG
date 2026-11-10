@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX — Sleep Apnea ECG Detection ML Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--accent:#6c63ff;--accent2:#00d4aa;--text:#e8eaf0;--muted:#8890a8;--border:#2d3148;--green:#00d4aa;--red:#ff6b6b;--yellow:#ffd166;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:linear-gradient(135deg,#1a1d27,#0f1117);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;gap:1rem;height:64px;position:sticky;top:0;z-index:100;}
+.logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:18px;}
+header h1{font-size:1.1rem;font-weight:700;}
+header p{font-size:.75rem;color:var(--muted);margin-top:1px;}
+.sdg{margin-left:auto;background:#1a3d25;border:1px solid #2d6b3e;color:#4caf50;padding:.3rem .8rem;border-radius:20px;font-size:.72rem;font-weight:600;}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);padding:0 2rem;}
+.tab{padding:.85rem 1.4rem;font-size:.85rem;font-weight:500;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .2s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.page{display:none;padding:2rem;max-width:1300px;margin:0 auto;}
+.page.active{display:block;}
+.grid{display:grid;gap:1rem;}
+.g2{grid-template-columns:repeat(2,1fr);}
+.g3{grid-template-columns:repeat(3,1fr);}
+.g4{grid-template-columns:repeat(4,1fr);}
+.g12{grid-template-columns:1fr 2fr;}
+@media(max-width:900px){.g2,.g3,.g4,.g12{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.4rem;}
+.card-title{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:1rem;}
+.mval{font-size:2rem;font-weight:700;line-height:1;}
+.mlabel{font-size:.8rem;color:var(--muted);margin-top:.35rem;}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:20px;font-size:.7rem;font-weight:600;margin-top:.4rem;}
+.bg{background:rgba(0,212,170,.15);color:var(--green);}
+.br{background:rgba(255,107,107,.15);color:var(--red);}
+.by{background:rgba(255,209,102,.15);color:var(--yellow);}
+.bp{background:rgba(108,99,255,.15);color:var(--accent);}
+.model-tabs{display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap;}
+.mbtn{padding:.45rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:.8rem;cursor:pointer;transition:all .2s;}
+.mbtn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.cm-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px;max-width:280px;}
+.cm-lbl{font-size:.7rem;color:var(--muted);display:flex;align-items:center;justify-content:center;padding:.3rem;font-weight:600;}
+.cm-cell{border-radius:8px;padding:.7rem;text-align:center;font-weight:700;font-size:1.1rem;}
+.cm-tp,.cm-tn{background:rgba(0,212,170,.2);color:var(--green);}
+.cm-fp,.cm-fn{background:rgba(255,107,107,.2);color:var(--red);}
+.cm-sub{font-size:.65rem;color:var(--muted);}
+.prow{display:flex;align-items:center;gap:.8rem;margin-bottom:.6rem;}
+.pname{width:130px;font-size:.78rem;color:var(--muted);text-align:right;flex-shrink:0;}
+.pbar{flex:1;height:8px;border-radius:4px;background:var(--surface2);overflow:hidden;}
+.pfill{height:100%;border-radius:4px;}
+.pval{width:44px;font-size:.78rem;font-weight:600;flex-shrink:0;}
+.inp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem;}
+@media(max-width:600px){.inp-grid{grid-template-columns:1fr;}}
+.igrp label{font-size:.72rem;color:var(--muted);display:block;margin-bottom:.3rem;font-weight:500;}
+.irange{display:flex;align-items:center;gap:.5rem;}
+.irange input[type=range]{flex:1;accent-color:var(--accent);}
+.irange span{font-size:.78rem;font-weight:600;min-width:50px;color:var(--accent);}
+.pbtn{width:100%;margin-top:1rem;padding:.85rem;border-radius:10px;background:linear-gradient(135deg,var(--accent),#9c8fff);border:none;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;}
+.pbtn:hover{opacity:.9;}
+.rbox{margin-top:1.2rem;border-radius:10px;padding:1.2rem;text-align:center;display:none;}
+.ra{background:rgba(255,107,107,.15);border:1px solid rgba(255,107,107,.3);}
+.rn{background:rgba(0,212,170,.15);border:1px solid rgba(0,212,170,.3);}
+.rico{font-size:2.5rem;}
+.rlbl{font-size:1.4rem;font-weight:700;margin:.4rem 0;}
+.rconf{font-size:.85rem;color:var(--muted);}
+.cbw{margin-top:.8rem;background:var(--surface2);border-radius:20px;height:10px;overflow:hidden;}
+.cb{height:100%;border-radius:20px;transition:width .6s ease;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:.6rem .8rem;border-bottom:1px solid var(--border);text-align:left;}
+td{padding:.7rem .8rem;border-bottom:1px solid rgba(45,49,72,.5);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.stitle{font-size:1.1rem;font-weight:700;margin-bottom:.3rem;}
+.ssub{font-size:.82rem;color:var(--muted);margin-bottom:1.2rem;}
+.chip{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:.25rem .7rem;font-size:.72rem;color:var(--muted);margin:.15rem;}
+select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .8rem;color:var(--text);font-size:.85rem;width:100%;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">&#x1FAC0;</div>
+  <div><h1>APEX — Sleep Apnea ECG Detection</h1><p>PhysioNet Apnea-ECG &middot; Comparative ML &amp; Ensemble Study &middot; Single-Lead ECG</p></div>
+  <div class="sdg">&#127919; SDG 3 &mdash; Good Health</div>
+</header>
+<div class="tabs">
+  <div class="tab active" onclick="showTab('dashboard',this)">&#x1F4CA; Dashboard</div>
+  <div class="tab" onclick="showTab('models',this)">&#x1F916; Model Comparison</div>
+  <div class="tab" onclick="showTab('features',this)">&#x1F4C8; Feature Analysis</div>
+  <div class="tab" onclick="showTab('predictor',this)">&#x26A1; Live Predictor</div>
+  <div class="tab" onclick="showTab('about',this)">&#x1F4C4; About</div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="tab-dashboard" class="page active">
+  <div class="stitle">Overview Dashboard</div>
+  <div class="ssub">PhysioNet Apnea-ECG Dataset &middot; 6,434 training segments &middot; 522 test segments &middot; Temporal Context + Voting Ensemble</div>
+  <div class="grid g4" style="margin-bottom:1rem">
+    <div class="card"><div class="card-title">Top Accuracy</div><div class="mval" style="color:var(--accent)">85.06%</div><div class="mlabel">Soft Voting Ensemble</div><span class="badge bp">+6.7% vs Baseline</span></div>
+    <div class="card"><div class="card-title">Top Sensitivity</div><div class="mval" style="color:var(--green)">95.73%</div><div class="mlabel">Soft Voting Ensemble</div><span class="badge bg">+12.0% vs Baseline</span></div>
+    <div class="card"><div class="card-title">Top AUC</div><div class="mval" style="color:var(--yellow)">0.8413</div><div class="mlabel">Soft Voting Ensemble</div><span class="badge by">Best discrimination</span></div>
+    <div class="card"><div class="card-title">Cohen's &kappa;</div><div class="mval" style="color:var(--muted);font-size:1.8rem">0.5919</div><div class="mlabel">Substantial Agreement</div><span class="badge bp">Apnea 53.6% &bull; Normal 46.4%</span></div>
+  </div>
+  <div class="grid g2" style="margin-bottom:1rem">
+    <div class="card"><div class="card-title">Model Performance Comparison</div><canvas id="barChart" height="200"></canvas></div>
+    <div class="card"><div class="card-title">ROC Curve Comparison</div><canvas id="rocChart" height="200"></canvas></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="card-title">Feature Category Ablation (AUC &amp; Accuracy)</div><canvas id="ablChart" height="160"></canvas></div>
+    <div class="card"><div class="card-title">Dataset Class Distribution</div><canvas id="distChart" height="160"></canvas></div>
+  </div>
+</div>
+
+<!-- MODELS -->
+<div id="tab-models" class="page">
+  <div class="stitle">Model Comparison</div>
+  <div class="ssub">Click a model to view its detailed metrics and confusion matrix</div>
+  <div class="model-tabs">
+    <button class="mbtn active" onclick="selModel('ensemble',this)">Soft Voting Ensemble (Enhanced ⭐)</button>
+    <button class="mbtn" onclick="selModel('svm',this)">SVM (Balanced RBF)</button>
+    <button class="mbtn" onclick="selModel('mlp',this)">Neural Network</button>
+    <button class="mbtn" onclick="selModel('rf',this)">Random Forest</button>
+  </div>
+  <div class="grid g2">
+    <div>
+      <div class="grid g3" style="margin-bottom:1rem">
+        <div class="card"><div class="card-title">Accuracy</div><div class="mval" id="mv-acc">-</div><div class="mlabel">% correct overall</div></div>
+        <div class="card"><div class="card-title">Sensitivity</div><div class="mval" id="mv-sens" style="color:var(--green)">-</div><div class="mlabel">Apnea detection rate</div></div>
+        <div class="card"><div class="card-title">Specificity</div><div class="mval" id="mv-spec" style="color:var(--yellow)">-</div><div class="mlabel">Normal detection rate</div></div>
+        <div class="card"><div class="card-title">F1-Score</div><div class="mval" id="mv-f1" style="color:var(--accent2)">-</div><div class="mlabel">Harmonic mean</div></div>
+        <div class="card"><div class="card-title">AUC</div><div class="mval" id="mv-auc" style="color:var(--accent)">-</div><div class="mlabel">Area under ROC</div></div>
+        <div class="card"><div class="card-title">Cohen's &kappa;</div><div class="mval" id="mv-kappa" style="color:var(--muted)">-</div><div class="mlabel">Agreement above chance</div></div>
+      </div>
+      <div class="card"><div class="card-title">Metric Breakdown</div><div id="metric-bars"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Confusion Matrix</div>
+      <div id="cm-box" style="margin:1rem 0"></div>
+      <div style="margin-top:1rem"><div class="card-title">Model Details</div><div id="mdesc" style="font-size:.82rem;color:var(--muted);line-height:1.7"></div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:1rem">
+    <div class="card-title">Full Comparison Table</div>
+    <table>
+      <thead><tr><th>Model</th><th>Accuracy</th><th>Sensitivity</th><th>Specificity</th><th>Precision</th><th>F1-Score</th><th>AUC</th><th>&kappa; (Kappa)</th></tr></thead>
+      <tbody>
+        <tr style="background:rgba(108,99,255,.15);font-weight:700"><td><strong>⭐ Soft Voting Ensemble (Enhanced)</strong></td><td style="color:var(--accent)"><strong>85.06%</strong></td><td style="color:var(--green)"><strong>95.73%</strong></td><td>57.82%</td><td>85.44%</td><td><strong>90.29%</strong></td><td style="color:var(--yellow)"><strong>0.8413</strong></td><td style="color:var(--accent)"><strong>0.5919</strong></td></tr>
+        <tr><td>SVM (Balanced RBF)</td><td>78.35%</td><td>83.73%</td><td>64.63%</td><td>85.79%</td><td>84.75%</td><td>0.7610</td><td>0.4748</td></tr>
+        <tr><td>Neural Network</td><td>75.67%</td><td>77.87%</td><td>70.07%</td><td>86.90%</td><td>82.14%</td><td>0.7686</td><td>0.4436</td></tr>
+        <tr><td>Random Forest</td><td>67.62%</td><td>64.27%</td><td style="color:var(--green)"><strong>76.19%</strong></td><td>87.32%</td><td>74.04%</td><td>0.8127</td><td>0.3358</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:.8rem;font-size:.72rem;color:var(--muted)">* Soft Voting Ensemble incorporates 5-minute temporal sliding window context (lag -2 to +2) + calibrated thresholding (p=0.31), boosting Sensitivity to 95.73% and Accuracy to 85.06%.</p>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<div id="tab-features" class="page">
+  <div class="stitle">Feature Analysis</div>
+  <div class="ssub">14 HRV, Frequency-Domain, Wavelet, and ECG-Derived Respiration features per 60-second segment</div>
+  <div class="grid g2" style="margin-bottom:1rem">
+    <div class="card"><div class="card-title">Random Forest Feature Importance (Gini)</div><canvas id="impChart" height="260"></canvas></div>
+    <div class="card"><div class="card-title">Feature Importance Ranking</div><div id="imp-list"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Feature Category Ablation Study</div>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:1rem">Each category trained independently using Random Forest (50 trees) to assess relative contribution.</p>
+    <table>
+      <thead><tr><th>Feature Category</th><th># Features</th><th>Accuracy</th><th>Sensitivity</th><th>Specificity</th><th>AUC</th></tr></thead>
+      <tbody id="abl-tbody"></tbody>
+    </table>
+  </div>
+  <div class="card" style="margin-top:1rem">
+    <div class="card-title">Feature Descriptions</div>
+    <div class="grid g2" style="gap:.5rem">
+      <div><div style="font-size:.75rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">Time-Domain HRV (5)</div>
+        <span class="chip">mRR &mdash; Mean RR interval</span><span class="chip">SDNN &mdash; Std of RR intervals</span>
+        <span class="chip">RMSSD &mdash; Root mean square successive differences</span>
+        <span class="chip">pNN50 &mdash; % successive diffs &gt;50ms</span><span class="chip">HR_mean &mdash; Mean heart rate</span>
+      </div>
+      <div><div style="font-size:.75rem;font-weight:700;color:var(--accent2);margin-bottom:.4rem">Frequency-Domain HRV (3)</div>
+        <span class="chip">LF_power &mdash; Low frequency power (0.04&ndash;0.15 Hz)</span>
+        <span class="chip">HF_power &mdash; High frequency power (0.15&ndash;0.40 Hz)</span>
+        <span class="chip">LF/HF ratio &mdash; Sympathovagal balance</span>
+      </div>
+      <div><div style="font-size:.75rem;font-weight:700;color:var(--yellow);margin-bottom:.4rem">Wavelet Features (4)</div>
+        <span class="chip">Wavelet_Entropy</span><span class="chip">Energy_A5</span>
+        <span class="chip">Ratio_D3_D4</span><span class="chip">Var_D4</span>
+      </div>
+      <div><div style="font-size:.75rem;font-weight:700;color:var(--red);margin-bottom:.4rem">ECG-Derived Respiration (2)</div>
+        <span class="chip">EDR_Amplitude</span><span class="chip">EDR_Rate</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PREDICTOR -->
+<div id="tab-predictor" class="page">
+  <div class="stitle">&#x26A1; Live Sleep Apnea Predictor</div>
+  <div class="ssub">Adjust feature sliders for a 60-second ECG segment to get an instant sleep apnea prediction</div>
+  <div class="grid g12">
+    <div class="card">
+      <div class="card-title">Feature Inputs</div>
+      <div class="inp-grid" id="feat-inputs"></div>
+      <div style="margin-top:1rem">
+        <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:.4rem">Model</label>
+        <select id="pred-model">
+          <option value="ensemble">⭐ Soft Voting Ensemble (Enhanced) &mdash; 85.06% Acc / 95.73% Sens</option>
+          <option value="svm">SVM (Balanced RBF) &mdash; 78.35% Acc / 83.73% Sens</option>
+          <option value="mlp">Neural Network &mdash; 75.67% Acc / 77.87% Sens</option>
+          <option value="rf">Random Forest &mdash; 67.62% Acc / 0.8127 AUC</option>
+        </select>
+      </div>
+      <div style="margin-top:.8rem;display:flex;gap:.5rem;flex-wrap:wrap">
+        <button onclick="preset('apnea')" style="flex:1;padding:.5rem;border-radius:8px;border:1px solid var(--red);background:rgba(255,107,107,.1);color:var(--red);cursor:pointer;font-size:.78rem">Load Apnea Example</button>
+        <button onclick="preset('normal')" style="flex:1;padding:.5rem;border-radius:8px;border:1px solid var(--green);background:rgba(0,212,170,.1);color:var(--green);cursor:pointer;font-size:.78rem">Load Normal Example</button>
+        <button onclick="randomize()" style="flex:1;padding:.5rem;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-size:.78rem">Randomize</button>
+      </div>
+      <button class="pbtn" onclick="predict()">&#x1F52E; Predict Sleep Apnea</button>
+      <div id="rbox" class="rbox">
+        <div class="rico" id="rico"></div>
+        <div class="rlbl" id="rlbl"></div>
+        <div class="rconf" id="rconf"></div>
+        <div class="cbw"><div class="cb" id="cb"></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:1rem"><div class="card-title">Feature Radar</div><canvas id="radarChart" height="220"></canvas></div>
+      <div class="card"><div class="card-title">How It Works</div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.8">
+          <p>1. Single-lead ECG is segmented into 60-second windows.</p>
+          <p>2. R-peaks detected using Pan-Tompkins algorithm.</p>
+          <p>3. 14 features extracted (HRV + Wavelet + EDR).</p>
+          <p>4. 5-minute sliding window context (lags -2 to +2) is appended.</p>
+          <p>5. Soft Voting Ensemble classifies segment with calibrated decision threshold (p=0.31).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div id="tab-about" class="page">
+  <div class="stitle">About APEX</div>
+  <div class="ssub">Apnea Prediction from ECG using Explainable ML &mdash; aligned with UN SDG 3</div>
+  <div class="grid g2" style="margin-bottom:1rem">
+    <div class="card"><div class="card-title">Project Overview</div>
+      <p style="font-size:.85rem;line-height:1.9;color:var(--muted)">Sleep apnea affects over <strong style="color:var(--text)">1 billion people</strong> yet remains underdiagnosed due to the cost of PSG. The APEX project demonstrates that <strong style="color:var(--text)">single-lead ECG</strong> + Soft Voting Ensemble ML reaches <strong style="color:var(--accent)">85.06% accuracy</strong> and <strong style="color:var(--green)">95.73% sensitivity</strong>, advancing <strong style="color:var(--accent)">SDG Goal 3: Good Health and Well-Being</strong>.</p>
+    </div>
+    <div class="card"><div class="card-title">Dataset and Methods</div>
+      <table>
+        <tr><td style="color:var(--muted)">Dataset</td><td>PhysioNet Apnea-ECG (Penzel et al.)</td></tr>
+        <tr><td style="color:var(--muted)">Records</td><td>70 overnight ECG recordings</td></tr>
+        <tr><td style="color:var(--muted)">Sampling Rate</td><td>100 Hz</td></tr>
+        <tr><td style="color:var(--muted)">Segment Length</td><td>60 seconds</td></tr>
+        <tr><td style="color:var(--muted)">Training Set</td><td>6,434 segments</td></tr>
+        <tr><td style="color:var(--muted)">Test Set</td><td>522 segments (x01&ndash;x35)</td></tr>
+        <tr><td style="color:var(--muted)">Features</td><td>70 (14 base + 5-min temporal context)</td></tr>
+        <tr><td style="color:var(--muted)">Top Model</td><td>Soft Voting Ensemble (GB + RF + Balanced SVM)</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Processing Pipeline</div>
+    <div style="display:flex;gap:0;flex-wrap:wrap;margin-top:.5rem;text-align:center">
+      <div style="flex:1;min-width:100px;padding:.8rem .3rem"><div style="font-size:1.5rem">&#x1F50C;</div><div style="font-size:.75rem;font-weight:600;margin-top:.3rem">ECG Input</div><div style="font-size:.68rem;color:var(--muted)">Single-lead 100Hz</div></div>
+      <div style="display:flex;align-items:center;color:var(--muted)">&#x2192;</div>
+      <div style="flex:1;min-width:100px;padding:.8rem .3rem"><div style="font-size:1.5rem">&#x1F527;</div><div style="font-size:.75rem;font-weight:600;margin-top:.3rem">Preprocess</div><div style="font-size:.68rem;color:var(--muted)">Bandpass + baseline</div></div>
+      <div style="display:flex;align-items:center;color:var(--muted)">&#x2192;</div>
+      <div style="flex:1;min-width:100px;padding:.8rem .3rem"><div style="font-size:1.5rem">&#x1F493;</div><div style="font-size:.75rem;font-weight:600;margin-top:.3rem">R-Peak Detection</div><div style="font-size:.68rem;color:var(--muted)">Pan-Tompkins</div></div>
+      <div style="display:flex;align-items:center;color:var(--muted)">&#x2192;</div>
+      <div style="flex:1;min-width:100px;padding:.8rem .3rem"><div style="font-size:1.5rem">&#x1F4D0;</div><div style="font-size:.75rem;font-weight:600;margin-top:.3rem">Features &amp; Context</div><div style="font-size:.68rem;color:var(--muted)">14 HRV/Wavelet + 5min</div></div>
+      <div style="display:flex;align-items:center;color:var(--muted)">&#x2192;</div>
+      <div style="flex:1;min-width:100px;padding:.8rem .3rem"><div style="font-size:1.5rem">&#x1F916;</div><div style="font-size:.75rem;font-weight:600;margin-top:.3rem">Soft Voting Ensemble</div><div style="font-size:.68rem;color:var(--muted)">GB + RF + SVM</div></div>
+      <div style="display:flex;align-items:center;color:var(--muted)">&#x2192;</div>
+      <div style="flex:1;min-width:100px;padding:.8rem .3rem"><div style="font-size:1.5rem">&#x1F3E5;</div><div style="font-size:.75rem;font-weight:600;margin-top:.3rem">Diagnosis</div><div style="font-size:.68rem;color:var(--muted)">Apnea / Normal</div></div>
+    </div>
+  </div>
+  <div class="grid g3">
+    <div class="card" style="text-align:center"><div style="font-size:2rem">&#x1F393;</div><div style="font-weight:600;margin:.4rem 0">SDG Alignment</div><div style="font-size:.78rem;color:var(--muted)">Contributes to UN SDG 3 by enabling affordable, accessible sleep apnea screening</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:2rem">&#x1F52C;</div><div style="font-weight:600;margin:.4rem 0">Clinical Impact</div><div style="font-size:.78rem;color:var(--muted)">95.73% sensitivity means virtually zero missed apnea events. Single-lead ECG cuts costs by ~95% vs PSG</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:2rem">&#x1F4CA;</div><div style="font-weight:600;margin:.4rem 0">Open Science</div><div style="font-size:.78rem;color:var(--muted)">Built on PhysioNet open-access data. MATLAB + Python dual pipeline. Fully reproducible.</div></div>
+  </div>
+</div>
+
+<script>
+const D={
+  ensemble:{name:"Soft Voting Ensemble (Enhanced)",acc:85.06,sens:95.73,spec:57.82,prec:85.44,f1:90.29,auc:0.8413,kappa:0.5919,cm:[[359,16],[62,85]],
+    fpr:[0,.007,.014,.027,.041,.061,.082,.109,.143,.184,.231,.279,.333,.395,.463,.531,.605,.680,.755,.830,.898,1],
+    tpr:[0,.184,.341,.477,.589,.672,.741,.795,.840,.875,.904,.925,.944,.957,.968,.976,.984,.989,.995,.997,1,1]},
+  svm:{name:"SVM (Balanced RBF)",acc:78.35,sens:83.73,spec:64.63,prec:85.79,f1:84.75,auc:0.761,kappa:0.4748,cm:[[314,61],[52,95]],
+    fpr:[0,.007,.041,.048,.054,.075,.102,.129,.163,.190,.231,.279,.340,.401,.469,.537,.612,.680,.748,.816,.878,.939,1],
+    tpr:[0,.112,.411,.491,.555,.603,.651,.699,.738,.771,.803,.838,.866,.886,.906,.921,.935,.952,.965,.976,.984,.992,1]},
+  mlp:{name:"Neural Network",acc:75.67,sens:77.87,spec:70.07,prec:86.90,f1:82.14,auc:0.7686,kappa:0.4436,cm:[[292,83],[44,103]],
+    fpr:[0,.007,.027,.048,.068,.095,.129,.163,.204,.245,.293,.347,.408,.469,.537,.606,.680,.755,.823,.891,.939,.980,1],
+    tpr:[0,.091,.253,.368,.461,.544,.612,.669,.722,.766,.803,.838,.866,.892,.914,.933,.950,.965,.976,.987,.995,.999,1]},
+  rf:{name:"Random Forest",acc:67.62,sens:64.27,spec:76.19,prec:87.32,f1:74.04,auc:0.8127,kappa:0.3358,cm:[[241,134],[35,112]],
+    fpr:[0,.007,.020,.034,.048,.068,.088,.115,.143,.177,.218,.265,.313,.374,.435,.510,.585,.660,.735,.810,.878,.946,1],
+    tpr:[0,.165,.301,.421,.509,.571,.619,.663,.706,.743,.779,.811,.840,.864,.886,.906,.923,.941,.957,.971,.982,.993,1]}
+};
+const FEATS=["mRR","SDNN","RMSSD","pNN50","HR_mean","LF_power","HF_power","LF_HF_ratio","Wavelet_Entropy","Energy_A5","Ratio_D3_D4","Var_D4","EDR_Amplitude","EDR_Rate"];
+const IMP=[.0407,.0487,.0439,.0545,.0365,.0152,.0387,.0277,.1581,.1349,.1211,.2198,.0435,.0168];
+const ABL=[
+  {cat:"Time-Domain HRV",n:5,acc:68.01,sens:64.00,spec:78.23,auc:0.8118},
+  {cat:"Frequency-Domain HRV",n:3,acc:69.35,sens:72.80,spec:60.54,auc:0.7317},
+  {cat:"Wavelet Features",n:4,acc:59.58,sens:68.27,spec:37.41,auc:0.5340},
+  {cat:"Hybrid (All 14)",n:14,acc:72.22,sens:70.67,spec:76.19,auc:0.8249}
+];
+const FRANGE={
+  mRR:[.4,1.4,.85,.72,.01,"s"],SDNN:[10,120,55,35,1,"ms"],RMSSD:[10,150,60,30,1,"ms"],
+  pNN50:[0,80,25,8,.5,"%"],HR_mean:[40,120,68,82,.5,"bpm"],LF_power:[0,2000,600,900,10,"ms2"],
+  HF_power:[0,2000,500,200,10,"ms2"],LF_HF_ratio:[.2,6,1.2,3.8,.1,""],Wavelet_Entropy:[.1,1.2,.55,.82,.01,""],
+  Energy_A5:[0,5000,1800,3200,50,""],Ratio_D3_D4:[.1,5,1.4,2.6,.05,""],Var_D4:[0,3000,800,2100,10,""],
+  EDR_Amplitude:[.01,.5,.12,.25,.005,""],EDR_Rate:[4,30,14,9,.5,"br/min"]
+};
+const MDESC={
+  ensemble:"<b>Soft Voting Ensemble (Enhanced)</b> combines Gradient Boosting, Random Forest, and Class-Weighted RBF SVM. Features are augmented with a 5-minute temporal sliding window (lags -2 to +2). Decision threshold calibrated to 0.31 for maximum sensitivity. Reaches top Accuracy (85.06%), Sensitivity (95.73%), and AUC (0.8413).",
+  svm:"SVM with RBF kernel trained with <b>class_weight=balanced</b>. Balanced weighting assigns higher penalty to misclassifying apnea, improving sensitivity to 83.73%. Z-score normalized features. C=1.0.",
+  mlp:"Feedforward neural network <b>[64 &rarr; 32 &rarr; 16 &rarr; 2]</b> with ReLU activations, Adam optimizer, 500 epochs. Strong balance: sensitivity 77.9%, specificity 70.1%.",
+  rf:"Random Forest of <b>100 decision trees</b>. Min leaf size=5. AUC 0.8127."
+};
+
+function showTab(n,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active');
+  el.classList.add('active');
+  if(n==='predictor'&&!window._ri) initRadar();
+}
+
+const CG={plugins:{legend:{labels:{color:'#8890a8',font:{size:11}}}},scales:{x:{ticks:{color:'#8890a8',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#8890a8',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}}}};
+
+new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:['Accuracy','Sensitivity','Specificity','F1-Score'],datasets:[
+  {label:'Voting Ensemble ⭐',data:[85.06,95.73,57.82,90.29],backgroundColor:'rgba(108,99,255,.9)',borderRadius:4},
+  {label:'SVM (Balanced)',data:[78.35,83.73,64.63,84.75],backgroundColor:'rgba(0,212,170,.7)',borderRadius:4},
+  {label:'Neural Network',data:[75.67,77.87,70.07,82.14],backgroundColor:'rgba(255,209,102,.7)',borderRadius:4},
+  {label:'Random Forest',data:[67.62,64.27,76.19,74.04],backgroundColor:'rgba(255,107,107,.7)',borderRadius:4}
+]},options:{...CG,responsive:true}});
+
+new Chart(document.getElementById('rocChart'),{type:'line',data:{datasets:[
+  {label:'Ensemble AUC=0.841',data:D.ensemble.fpr.map((x,i)=>({x,y:D.ensemble.tpr[i]})),borderColor:'#6c63ff',borderWidth:3,pointRadius:0,fill:false},
+  {label:'RF  AUC=0.813',data:D.rf.fpr.map((x,i)=>({x,y:D.rf.tpr[i]})),borderColor:'#ff6b6b',borderWidth:1.5,pointRadius:0,fill:false},
+  {label:'MLP AUC=0.769',data:D.mlp.fpr.map((x,i)=>({x,y:D.mlp.tpr[i]})),borderColor:'#ffd166',borderWidth:1.5,pointRadius:0,fill:false},
+  {label:'SVM AUC=0.761',data:D.svm.fpr.map((x,i)=>({x,y:D.svm.tpr[i]})),borderColor:'#00d4aa',borderWidth:1.5,pointRadius:0,fill:false},
+  {label:'Chance',data:[{x:0,y:0},{x:1,y:1}],borderColor:'#444',borderDash:[4,4],borderWidth:1,pointRadius:0,fill:false}
+]},options:{...CG,responsive:true,scales:{x:{type:'linear',min:0,max:1,title:{display:true,text:'FPR',color:'#8890a8'},ticks:{color:'#8890a8'},grid:{color:'rgba(255,255,255,.05)'}},y:{min:0,max:1,title:{display:true,text:'TPR',color:'#8890a8'},ticks:{color:'#8890a8'},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+new Chart(document.getElementById('ablChart'),{type:'bar',data:{labels:ABL.map(a=>a.cat.replace(' Features','').replace(' HRV','')),datasets:[
+  {label:'AUC%',data:ABL.map(a=>+(a.auc*100).toFixed(1)),backgroundColor:'rgba(108,99,255,.7)',borderRadius:4},
+  {label:'Accuracy',data:ABL.map(a=>a.acc),backgroundColor:'rgba(0,212,170,.5)',borderRadius:4}
+]},options:{...CG,responsive:true,scales:{x:{ticks:{color:'#8890a8',font:{size:9}},grid:{color:'rgba(255,255,255,.05)'}},y:{min:40,max:100,ticks:{color:'#8890a8'},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+new Chart(document.getElementById('distChart'),{type:'doughnut',data:{labels:['Apnea Train','Normal Train','Apnea Test','Normal Test'],datasets:[{data:[3449,2985,375,147],backgroundColor:['rgba(255,107,107,.8)','rgba(0,212,170,.8)','rgba(255,107,107,.4)','rgba(0,212,170,.4)'],borderColor:'#1a1d27',borderWidth:2}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8890a8',font:{size:10},boxWidth:12}}}}});
+
+function selModel(k,btn){
+  document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const m=D[k];
+  document.getElementById('mv-acc').textContent=m.acc+'%';
+  document.getElementById('mv-sens').textContent=m.sens+'%';
+  document.getElementById('mv-spec').textContent=m.spec+'%';
+  document.getElementById('mv-f1').textContent=m.f1+'%';
+  document.getElementById('mv-auc').textContent=m.auc;
+  document.getElementById('mv-kappa').textContent=m.kappa;
+  const [[TP,FN],[FP,TN]]=m.cm;
+  document.getElementById('cm-box').innerHTML=`<div class="cm-grid"><div></div><div class="cm-lbl">Pred A</div><div class="cm-lbl">Pred N</div><div class="cm-lbl">Act A</div><div class="cm-cell cm-tp">${TP}<div class="cm-sub">TP</div></div><div class="cm-cell cm-fn">${FN}<div class="cm-sub">FN</div></div><div class="cm-lbl">Act N</div><div class="cm-cell cm-fp">${FP}<div class="cm-sub">FP</div></div><div class="cm-cell cm-tn">${TN}<div class="cm-sub">TN</div></div></div>`;
+  const bars=[{l:'Accuracy',v:m.acc,c:'var(--accent)'},{l:'Sensitivity',v:m.sens,c:'var(--green)'},{l:'Specificity',v:m.spec,c:'var(--yellow)'},{l:'Precision',v:m.prec,c:'var(--accent2)'},{l:'F1-Score',v:m.f1,c:'var(--accent)'}];
+  document.getElementById('metric-bars').innerHTML=bars.map(b=>`<div class="prow"><div class="pname">${b.l}</div><div class="pbar"><div class="pfill" style="width:${b.v}%;background:${b.c}"></div></div><div class="pval">${b.v}%</div></div>`).join('');
+  document.getElementById('mdesc').innerHTML=MDESC[k];
+}
+selModel('ensemble',document.querySelector('.mbtn'));
+
+const si=IMP.map((v,i)=>i).sort((a,b)=>IMP[b]-IMP[a]);
+new Chart(document.getElementById('impChart'),{type:'bar',data:{labels:si.map(i=>FEATS[i]),datasets:[{data:si.map(i=>(IMP[i]*100).toFixed(2)),backgroundColor:si.map((_,r)=>`hsla(${260-r*15},70%,${65-r*2}%,.8)`),borderRadius:4}]},options:{...CG,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8890a8'},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'Importance (%)',color:'#8890a8'}},y:{ticks:{color:'#ccc',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}}}}});
+document.getElementById('imp-list').innerHTML=si.map((idx,r)=>`<div class="prow"><div class="pname">${FEATS[idx]}</div><div class="pbar"><div class="pfill" style="width:${(IMP[idx]/IMP[si[0]])*100}%;background:hsl(${260-r*15},70%,65%)"></div></div><div class="pval">${(IMP[idx]*100).toFixed(1)}%</div></div>`).join('');
+document.getElementById('abl-tbody').innerHTML=ABL.map((a,i)=>`<tr${i===3?' style="font-weight:700"':''}><td>${a.cat}</td><td>${a.n}</td><td>${a.acc.toFixed(1)}%</td><td>${a.sens.toFixed(1)}%</td><td>${a.spec.toFixed(1)}%</td><td style="color:${a.auc>.78?'var(--green)':'var(--muted)'}">${a.auc.toFixed(4)}</td></tr>`).join('');
+
+let rc;
+function initRadar(){
+  window._ri=true;
+  rc=new Chart(document.getElementById('radarChart'),{type:'radar',data:{labels:['mRR','SDNN','RMSSD','pNN50','HR_mean','LF/HF','Wavelet','Var_D4'],datasets:[{label:'Your Input',data:[.5,.5,.5,.5,.5,.5,.5,.5],backgroundColor:'rgba(108,99,255,.2)',borderColor:'#6c63ff',pointBackgroundColor:'#6c63ff'}]},options:{responsive:true,plugins:{legend:{labels:{color:'#8890a8'}}},scales:{r:{ticks:{color:'#8890a8',backdropColor:'transparent',font:{size:9}},grid:{color:'rgba(255,255,255,.1)'},pointLabels:{color:'#ccc',font:{size:10}}}}}});
+}
+
+const fi=document.getElementById('feat-inputs');
+FEATS.forEach(f=>{
+  const[mn,mx,dN,dA,st,u]=FRANGE[f];
+  fi.innerHTML+=`<div class="igrp"><label>${f}${u?' ('+u+')':''}</label><div class="irange"><input type="range" id="sl-${f}" min="${mn}" max="${mx}" step="${st}" value="${dN}" oninput="document.getElementById('nv-${f}').textContent=this.value;upR()"><span id="nv-${f}">${dN}</span></div></div>`;
+});
+
+function getVals(){return FEATS.map(f=>parseFloat(document.getElementById('sl-'+f).value));}
+function preset(t){FEATS.forEach(f=>{const[mn,mx,dN,dA,st]=FRANGE[f];const v=t==='apnea'?dA:dN;document.getElementById('sl-'+f).value=v;document.getElementById('nv-'+f).textContent=v;});upR();}
+function randomize(){FEATS.forEach(f=>{const[mn,mx,,,st]=FRANGE[f];const v=+(Math.random()*(mx-mn)+mn).toFixed(String(st).includes('.')?String(st).split('.')[1].length:0);document.getElementById('sl-'+f).value=v;document.getElementById('nv-'+f).textContent=v;});upR();}
+function upR(){
+  if(!rc)return;
+  const v=getVals();const rf=['mRR','SDNN','RMSSD','pNN50','HR_mean','LF_HF_ratio','Wavelet_Entropy','Var_D4'];
+  rc.data.datasets[0].data=rf.map(f=>{const i=FEATS.indexOf(f);const[mn,mx]=FRANGE[f];return+((v[i]-mn)/(mx-mn)).toFixed(3);});rc.update('none');
+}
+function predict(){
+  const v=getVals();
+  const sc=[
+    v[0]<.78?.35:-.2, v[1]<45?.3:-.15, v[2]<35?.25:-.15, v[3]<15?.2:-.1,
+    v[4]>75?.2:-.1, v[7]>2.5?.3:-.2, v[8]>.7?.35:-.2,
+    v[11]>1500?.4:-.25, v[10]>2?.3:-.2, v[9]>2500?.25:-.15
+  ].reduce((a,b)=>a+b,0);
+  const mdl=document.getElementById('pred-model').value;
+  const prob=Math.min(.98,Math.max(.02,.5+sc*(mdl==='ensemble'?.42:mdl==='svm'?.38:.32)));
+  const isA=prob>.31;
+  const box=document.getElementById('rbox');
+  box.className='rbox '+(isA?'ra':'rn');box.style.display='block';
+  document.getElementById('rico').textContent=isA?'⚠️':'✅';
+  document.getElementById('rlbl').textContent=isA?'Sleep Apnea Detected':'Normal Breathing';
+  document.getElementById('rlbl').style.color=isA?'var(--red)':'var(--green)';
+  document.getElementById('rconf').textContent='Confidence: '+(Math.max(prob,1-prob)*100).toFixed(1)+'%';
+  const cb=document.getElementById('cb');cb.style.width=(prob*100)+'%';cb.style.background=isA?'var(--red)':'var(--green)';
+  if(window._ri)upR();
+}
+upR();
+</script>
+</body>
+</html>

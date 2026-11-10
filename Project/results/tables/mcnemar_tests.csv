@@ -1,0 +1,4 @@
+Comparison_Pair,ChiSquare_Stat,P_Value,Significant_p05
+SVM vs Random Forest,4.2050,0.040305,1
+SVM vs Neural Network,1.3889,0.238593,0
+Random Forest vs Neural Network,1.4083,0.235333,0
